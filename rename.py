@@ -1,37 +1,37 @@
 #Program to rename multiple movie files of different types on a linux server
 import os, re
 
-#/run/user/1000/gvfs/smb-share:server=raspberrypi,share=videos
-PATH = "/home/warpig/Desktop/movies"
-MAX = 20 #max title length
+#[title][optional garbage][year][optional garbage][.filetype]
+PATH = "/home/user/Desktop/movies/"
+PATT = re.compile(r"((?P<title>[0-9A-Za-z', ]+)(?P<year>[1-2][0-9]{3}).*|(?P<noYear>.{3,30}))(?P<ftype>\.avi|\.mp4|\.mkv)$")
 
-#if more than one period in title, removes and replaces with space
+#if more than one period in title, removes and replaces with space, replaces other special characters with spaces
 def clean(rawList):
     for file in rawList:
-        old = file
-        p = file.count('.')
-        new = file.replace('.', ' ', p-1).replace('[', ' ').replace(']', ' ').replace('(', ' ').replace(')', ' ').replace('_', ' ').replace('-', ' ')
-        os.rename(PATH+"/"+old, PATH+"/"+new)
-        #print(new)
+        if os.path.isfile(PATH+file):
+            old = file
+            p = file.count('.')
+            new = file.replace('.', ' ', p-1).replace('[', ' ').replace(']', ' ').replace('(', ' ').replace(')', ' ').replace('_', ' ').replace('-', ' ')
+            os.rename(PATH+old, PATH+new)
 
 def main():
-    #[title][optional garbage][year][optional garbage][.filetype]
-    patt = re.compile(r"((?P<title>[0-9A-Za-z', ]+)(?P<year>[1-2][0-9]{3}).*|(?P<noYear>.{3,30}))(?P<ftype>\.avi|\.mp4|\.mkv)$")
+    count = 0
 
+    clean(os.listdir(PATH))
     dir = os.listdir(PATH)
-    clean(dir)
 
     for movie in dir:
-        old = movie
-        m = patt.match(movie)
+        m = PATT.match(movie)
         if m:
             if m.group('noYear'):
                 new = str(m.group('noYear'))+str(m.group('ftype'))
+                count+=1
             elif m.group('title'):
-                new = str(m.group('title'))+"("+str(m.group('year'))+")"+str(m.group('ftype'))
-            print(new)
-            os.rename(PATH+"/"+old, PATH+"/"+new)
+                new = str(m.group('title').strip())+" ("+str(m.group('year'))+")"+str(m.group('ftype'))
+                count+=1
+            os.rename(PATH+movie, PATH+new)
 
+    print("Renamed "+str(count)+" movies.")
 
 main()
 
